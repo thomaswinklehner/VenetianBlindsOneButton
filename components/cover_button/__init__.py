@@ -55,6 +55,11 @@ CONFIG_SCHEMA = cv.All(
 
 
 async def to_code(config):
+    cg.add_global(
+        cg.RawStatement(
+            '#include "esphome/components/cover_button/cover_button.h"'
+        )
+    )
     var = cg.new_Pvariable(config[CONF_ID])
     await cg.register_component(var, config)
     cover_var = await cg.get_variable(config[CONF_COVER_ID])

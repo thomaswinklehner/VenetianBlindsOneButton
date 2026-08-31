@@ -68,6 +68,11 @@ CONFIG_SCHEMA = cv.All(
 
 
 async def to_code(config):
+    cg.add_global(
+        cg.RawStatement(
+            '#include "esphome/components/venetian_blinds/venetian_blinds.h"'
+        )
+    )
     var = await cover.new_cover(config)
     await cg.register_component(var, config)
 
