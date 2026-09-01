@@ -1,5 +1,7 @@
 #pragma once
 
+#include <cstdint>
+
 #include "esphome/components/cover/cover.h"
 #include "esphome/core/automation.h"
 #include "esphome/core/component.h"
