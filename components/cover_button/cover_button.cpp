@@ -23,11 +23,9 @@ void CoverButtonController::setup() {
     return;
   }
 
-  this->update_last_direction_();
-  if (this->cover_->current_operation == cover::COVER_OPERATION_IDLE) {
-    this->last_direction_ =
-        this->cover_->position >= 0.5f ? UP : DOWN;
-  }
+  // Always treat UP as the last direction after a restart, so the first
+  // button press moves the cover down.
+  this->last_direction_ = UP;
 
   controllers_[controller_count_++] = this;
   this->cover_->add_on_state_callback(
