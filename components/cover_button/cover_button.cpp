@@ -2,126 +2,123 @@
 
 #include <algorithm>
 
-namespace cover_button {
+#include "esphome/core/hal.h"
+#include "esphome/core/log.h"
 
-namespace {
+namespace esphome::cover_button {
 
-CoverButtonController *controllers[CoverButtonController::MAX_CONTROLLERS]{};
-int controller_count = 0;
+static const char *const TAG = "cover_button";
 
-void register_controller(CoverButtonController *controller) {
-  if (controller == nullptr || controller_count >= CoverButtonController::MAX_CONTROLLERS)
+CoverButtonController *CoverButtonController::controllers_[MAX_CONTROLLERS]{};
+size_t CoverButtonController::controller_count_{0};
+CoverButtonController::Direction CoverButtonController::group_direction_{DOWN};
+
+void CoverButtonController::setup() {
+  if (this->cover_ == nullptr || this->input_ == nullptr) {
+    this->mark_failed();
+    return;
+  }
+
+  if (controller_count_ >= MAX_CONTROLLERS) {
+    ESP_LOGE(TAG, "Too many cover button controllers");
+    this->mark_failed();
+    return;
+  }
+
+  controllers_[controller_count_++] = this;
+  this->input_->add_on_state_callback(
+      [this](bool state) { this->handle_input_(state); });
+}
+
+void CoverButtonController::dump_config() {
+  ESP_LOGCONFIG(TAG, "Cover button controller:");
+  ESP_LOGCONFIG(TAG, "  Tilt enabled: %s", YESNO(this->tilt_enabled_));
+  ESP_LOGCONFIG(TAG, "  Tilt step: %.0f%%", this->tilt_step_ * 100.0f);
+  ESP_LOGCONFIG(TAG, "  Press limits: %ums / %ums / %ums",
+                this->short_press_max_, this->stop_press_max_,
+                this->all_press_max_);
+}
+
+void CoverButtonController::handle_input_(bool state) {
+  const uint32_t now = millis();
+  if (state) {
+    this->pressed_at_ = now;
+    this->press_active_ = true;
+    return;
+  }
+
+  if (!this->press_active_)
     return;
 
-  controllers[controller_count++] = controller;
-}
-
-}  // namespace
-
-CoverButtonController::CoverButtonController() {
-  register_controller(this);
-}
-
-void CoverButtonController::set_cover(esphome::cover::Cover *cover) {
-  this->cover_ = cover;
-}
-
-int CoverButtonController::get_last_direction() const {
-  return this->last_direction_;
-}
-
-void CoverButtonController::set_direction(int direction) {
-  this->last_direction_ = direction == UP ? UP : DOWN;
+  this->press_active_ = false;
+  const uint32_t duration = now - this->pressed_at_;
+  if (duration < this->short_press_max_) {
+    this->short_press();
+  } else if (duration < this->stop_press_max_) {
+    this->stop_press();
+  } else if (duration <= this->all_press_max_) {
+    this->all_press();
+  }
 }
 
 void CoverButtonController::short_press() {
-  if (this->cover_ == nullptr)
+  // Roller covers intentionally do nothing on a short press.
+  if (!this->tilt_enabled_ || this->cover_ == nullptr)
     return;
 
-  // A short press is exclusively for tilt. Do not stop or reverse
-  // a running lift movement; the 1-2 s press is the stop command.
-  if (this->cover_->current_operation != esphome::cover::COVER_OPERATION_IDLE)
+  if (this->cover_->current_operation != cover::COVER_OPERATION_IDLE)
     return;
+
+  if (!this->cover_->get_traits().get_supports_tilt()) {
+    ESP_LOGW(TAG, "Short tilt ignored: configured cover has no tilt support");
+    return;
+  }
 
   const float old_tilt = this->cover_->tilt;
-  const float new_tilt =
-      this->last_direction_ == UP
-          ? std::min(old_tilt + 0.10f, 1.0f)
-          : std::max(old_tilt - 0.10f, 0.0f);
+  const float direction = group_direction_ == UP ? 1.0f : -1.0f;
+  const float new_tilt = std::clamp(
+      old_tilt + direction * this->tilt_step_, 0.0f, 1.0f);
 
   if (new_tilt == old_tilt)
     return;
 
-  auto call = this->cover_->make_call();
-  call.set_tilt(new_tilt);
-  call.perform();
+  this->cover_->make_call().set_tilt(new_tilt).perform();
 }
 
 void CoverButtonController::stop_press() {
-  if (this->cover_ == nullptr)
+  if (this->cover_ == nullptr ||
+      this->cover_->current_operation == cover::COVER_OPERATION_IDLE)
     return;
 
-  if (this->cover_->current_operation ==
-      esphome::cover::COVER_OPERATION_IDLE)
-    return;
-
-  auto call = this->cover_->make_call();
-  call.set_command_stop();
-  call.perform();
-}
-
-void CoverButtonController::long_press() {
-  this->all_press();
+  this->cover_->make_call().set_command_stop().perform();
 }
 
 void CoverButtonController::all_press() {
-  const int direction = this->last_direction_ == DOWN ? UP : DOWN;
+  move_all_(group_direction_ == DOWN ? UP : DOWN);
+}
 
-  for (int i = 0; i < controller_count; i++) {
-    if (controllers[i] != nullptr)
-      controllers[i]->move_direction(direction);
+void CoverButtonController::open_all() { move_all_(UP); }
+
+void CoverButtonController::close_all() { move_all_(DOWN); }
+
+void CoverButtonController::move_all_(Direction direction) {
+  group_direction_ = direction;
+  for (size_t index = 0; index < controller_count_; index++) {
+    if (controllers_[index] != nullptr)
+      controllers_[index]->move_(direction);
   }
 }
 
-void CoverButtonController::move_direction(int direction) {
+void CoverButtonController::move_(Direction direction) {
   if (this->cover_ == nullptr)
     return;
 
   auto call = this->cover_->make_call();
-
-  if (direction == UP) {
+  if (direction == UP)
     call.set_command_open();
-    this->last_direction_ = UP;
-  } else {
+  else
     call.set_command_close();
-    this->last_direction_ = DOWN;
-  }
-
   call.perform();
 }
 
-void CoverButtonController::stop() {
-  if (this->cover_ == nullptr)
-    return;
-
-  auto call = this->cover_->make_call();
-  call.set_command_stop();
-  call.perform();
-}
-
-}  // namespace cover_button
-
-cover_button::CoverButtonController button_01;
-cover_button::CoverButtonController button_02;
-cover_button::CoverButtonController button_03;
-cover_button::CoverButtonController button_04;
-cover_button::CoverButtonController button_05;
-cover_button::CoverButtonController button_06;
-cover_button::CoverButtonController button_07;
-cover_button::CoverButtonController button_08;
-cover_button::CoverButtonController button_09;
-cover_button::CoverButtonController button_10;
-cover_button::CoverButtonController button_11;
-cover_button::CoverButtonController button_12;
-cover_button::CoverButtonController button_13;
-cover_button::CoverButtonController button_14;
+}  // namespace esphome::cover_button

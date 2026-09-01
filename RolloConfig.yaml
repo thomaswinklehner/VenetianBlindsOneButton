@@ -1,48 +1,36 @@
 substitutions:
   name: boneio-c-07
   friendly_name: 'BoneIO ESP Cover'
-  serial_prefix: 'esp' #Don't change it.
+  serial_prefix: 'esp'
+  external_component_ref: develop
 
 esphome:
   name: '${name}'
   friendly_name: '${friendly_name}'
-  name_add_mac_suffix: true  
+  name_add_mac_suffix: true
   project:
-    name: boneio.32x10-cover
-    version: '0.7'
-    
+    name: thomaswinklehner.venetian-blinds-one-button
+    version: '1.0.0'
   on_boot:
-    priority: 800
-    then:
-      - lambda: |-
-          button_01.set_cover(id(cover_01));
-          button_02.set_cover(id(cover_02));
-          button_03.set_cover(id(cover_03));
-          button_04.set_cover(id(cover_04));
-          button_05.set_cover(id(cover_05));
-          button_06.set_cover(id(cover_06));
-          button_07.set_cover(id(cover_07));
-          button_08.set_cover(id(cover_08));
-          button_09.set_cover(id(cover_09));
-          button_10.set_cover(id(cover_10));
-          button_11.set_cover(id(cover_11));
-          button_12.set_cover(id(cover_12));
-          button_13.set_cover(id(cover_13));
-          button_14.set_cover(id(cover_14));
-
-          
+    - priority: 1001
+      then:
+        - lambda: |-
+            gpio_reset_pin((gpio_num_t) 14);
+            gpio_reset_pin((gpio_num_t) 15);
 
 esp32:
   board: nodemcu-32s
-  framework:                                                                            
+  framework:
     type: esp-idf
 
 external_components:
   - source:
       type: git
       url: https://github.com/thomaswinklehner/VenetianBlindsOneButton
-      ref: master
-    components: [cover_button]
+      ref: '${external_component_ref}'
+    components:
+      - cover_button
+      - venetian_blinds
 
 ethernet:
   id: eth
@@ -54,46 +42,43 @@ ethernet:
     mode: CLK_EXT_IN
   phy_addr: 1
   power_pin: GPIO16
-  use_address: 192.168.0.127
 
 dashboard_import:
-  package_import_url: github://boneIO-eu/esphome/boneio-cover_v0_7.yaml@latest
+  package_import_url: github://thomaswinklehner/VenetianBlindsOneButton/RolloConfig.yaml@develop
   import_full_config: true
 
 packages:
   internals_packages:
     url: https://github.com/boneIO-eu/esphome
-    ref: v1.7.1
-    files: [
-        'devices/buzzer.yaml',
-        'devices/serial_no.yaml',
-        'devices_v0_7/display.yaml',
-        'devices_v0_7/i2c.yaml',
-        'devices_v0_7-v0_9/ina219.yaml',
-        'devices_v0_7-v0_9/lm75b.yaml',
-        'devices_v0_7-v0_9/pcf.yaml',
-        'boards/cover/out01_02.yaml',
-        'boards/cover/out03_04.yaml',
-        'boards/cover/out05_06.yaml',
-        'boards/cover/out07_08.yaml',
-        'boards/cover/out09_10.yaml',
-        'boards/cover/out11_12.yaml',
-        'boards/cover/out13_14.yaml',
-        'boards/cover/out15_16.yaml',
-        'boards/cover/out17_18.yaml',
-        'boards/cover/out19_20.yaml',
-        'boards/cover/out21_22.yaml',
-        'boards/cover/out23_24.yaml',
-        'boards/cover/out25_26.yaml',
-        'boards/cover/out27_28.yaml',
-        'boards/cover/out29_30.yaml',
-        'boards/cover/out31_32.yaml',
-        # 'devices_v0_7-v0_9/one_wire.yaml',
-      ]
+    ref: packages-v2.1.0
+    files:
+      - 'packages/devices/buzzer.yaml'
+      - 'packages/devices/serial_no.yaml'
+      - 'packages/devices_v0_7/display.yaml'
+      - 'packages/devices_v0_7/i2c.yaml'
+      - 'packages/devices_v0_7-v0_9/ina219.yaml'
+      - 'packages/devices_v0_7-v0_9/lm75b.yaml'
+      - 'packages/devices_v0_7-v0_9/pcf.yaml'
+      - 'packages/boards/cover/out01_02.yaml'
+      - 'packages/boards/cover/out03_04.yaml'
+      - 'packages/boards/cover/out05_06.yaml'
+      - 'packages/boards/cover/out07_08.yaml'
+      - 'packages/boards/cover/out09_10.yaml'
+      - 'packages/boards/cover/out11_12.yaml'
+      - 'packages/boards/cover/out13_14.yaml'
+      - 'packages/boards/cover/out15_16.yaml'
+      - 'packages/boards/cover/out17_18.yaml'
+      - 'packages/boards/cover/out19_20.yaml'
+      - 'packages/boards/cover/out21_22.yaml'
+      - 'packages/boards/cover/out23_24.yaml'
+      - 'packages/boards/cover/out25_26.yaml'
+      - 'packages/boards/cover/out27_28.yaml'
 
 logger:
+
 api:
   reboot_timeout: 0s
+
 ota:
   - platform: esphome
   - platform: web_server
@@ -108,60 +93,47 @@ time:
     id: homeassistant_time
 
 cover:
-  # =========================
-  # VENETIAN BLINDS 01-06
-  # =========================
-
   - platform: venetian_blinds
-    name: 'K che'
+    name: 'Küche'
     id: cover_01
+    device_class: blind
     open_action:
       - switch.turn_on: cover_open_01_out01
     open_duration: 60s
-    close_action:    
-      - if:
-          condition:
-            binary_sensor.is_off: wind_alarm
-          then:
-            - switch.turn_on: cover_close_01_out02
+    close_action:
+      - switch.turn_on: cover_close_01_out02
     close_duration: 60s
-    tilt_duration: 2000ms
+    tilt_duration: 2s
     stop_action:
       - switch.turn_off: cover_open_01_out01
       - switch.turn_off: cover_close_01_out02
 
   - platform: venetian_blinds
-    name: 'EZ S D'
+    name: 'EZ SÜD'
     id: cover_02
+    device_class: blind
     open_action:
       - switch.turn_on: cover_open_02_out03
     open_duration: 60s
     close_action:
-      - if:
-          condition:
-            binary_sensor.is_off: wind_alarm
-          then:
-            - switch.turn_on: cover_close_02_out04
+      - switch.turn_on: cover_close_02_out04
     close_duration: 60s
-    tilt_duration: 2000ms
+    tilt_duration: 2s
     stop_action:
       - switch.turn_off: cover_open_02_out03
       - switch.turn_off: cover_close_02_out04
 
   - platform: venetian_blinds
-    name: 'EZ HEBE S D'
+    name: 'EZ HEBE SÜD'
     id: cover_03
+    device_class: blind
     open_action:
       - switch.turn_on: cover_open_03_out05
     open_duration: 60s
     close_action:
-      - if:
-          condition:
-            binary_sensor.is_off: wind_alarm
-          then:
-            - switch.turn_on: cover_close_03_out06
+      - switch.turn_on: cover_close_03_out06
     close_duration: 60s
-    tilt_duration: 2000ms
+    tilt_duration: 2s
     stop_action:
       - switch.turn_off: cover_open_03_out05
       - switch.turn_off: cover_close_03_out06
@@ -169,17 +141,14 @@ cover:
   - platform: venetian_blinds
     name: 'EZ HEBE NORD'
     id: cover_04
+    device_class: blind
     open_action:
       - switch.turn_on: cover_open_04_out07
     open_duration: 60s
     close_action:
-      - if:
-          condition:
-            binary_sensor.is_off: wind_alarm
-          then:
-            - switch.turn_on: cover_close_04_out08
+      - switch.turn_on: cover_close_04_out08
     close_duration: 60s
-    tilt_duration: 2000ms
+    tilt_duration: 2s
     stop_action:
       - switch.turn_off: cover_open_04_out07
       - switch.turn_off: cover_close_04_out08
@@ -187,241 +156,171 @@ cover:
   - platform: venetian_blinds
     name: 'WZ'
     id: cover_05
+    device_class: blind
     open_action:
       - switch.turn_on: cover_open_05_out09
     open_duration: 60s
     close_action:
-      - if:
-          condition:
-            binary_sensor.is_off: wind_alarm
-          then:
-            - switch.turn_on: cover_close_05_out10
+      - switch.turn_on: cover_close_05_out10
     close_duration: 60s
-    tilt_duration: 2000ms
+    tilt_duration: 2s
     stop_action:
       - switch.turn_off: cover_open_05_out09
       - switch.turn_off: cover_close_05_out10
 
-
-  # =========================
-  # ROLLER SHUTTERS 06-13
-  # =========================
-
-  - platform: venetian_blinds
-    name: 'G ste West'
+  - platform: time_based
+    name: 'Gäste West'
     id: cover_06
+    device_class: shutter
     open_action:
       - switch.turn_on: cover_open_06_out11
     open_duration: 60s
     close_action:
-      - if:
-          condition:
-            binary_sensor.is_off: wind_alarm
-          then:
-            - switch.turn_on: cover_close_06_out12
+      - switch.turn_on: cover_close_06_out12
     close_duration: 60s
-    tilt_duration: 2000ms
     stop_action:
       - switch.turn_off: cover_open_06_out11
       - switch.turn_off: cover_close_06_out12
 
-
-
-  - platform: venetian_blinds
-    name: 'G ste Nord'
+  - platform: time_based
+    name: 'Gäste Nord'
     id: cover_07
+    device_class: shutter
     open_action:
       - switch.turn_on: cover_open_07_out13
     open_duration: 60s
     close_action:
-      - if:
-          condition:
-            binary_sensor.is_off: wind_alarm
-          then:
-             - switch.turn_on: cover_close_07_out14
+      - switch.turn_on: cover_close_07_out14
     close_duration: 60s
-    tilt_duration: 2000ms
     stop_action:
       - switch.turn_off: cover_open_07_out13
       - switch.turn_off: cover_close_07_out14
 
-  - platform: venetian_blinds
+  - platform: time_based
     name: 'KZ OST OST'
     id: cover_08
+    device_class: shutter
     open_action:
       - switch.turn_on: cover_open_08_out15
     open_duration: 60s
     close_action:
-      - if:
-          condition:
-            binary_sensor.is_off: wind_alarm
-          then:
-            - switch.turn_on: cover_close_08_out16
+      - switch.turn_on: cover_close_08_out16
     close_duration: 60s
-    tilt_duration: 2000ms
     stop_action:
       - switch.turn_off: cover_open_08_out15
       - switch.turn_off: cover_close_08_out16
 
-  - platform: venetian_blinds
-    name: 'KZ OST S D'
+  - platform: time_based
+    name: 'KZ OST SÜD'
     id: cover_09
+    device_class: shutter
     open_action:
       - switch.turn_on: cover_open_09_out17
     open_duration: 60s
     close_action:
-      - if:
-          condition:
-            binary_sensor.is_off: wind_alarm
-          then:
-            - switch.turn_on: cover_close_09_out18
+      - switch.turn_on: cover_close_09_out18
     close_duration: 60s
-    tilt_duration: 2000ms
     stop_action:
       - switch.turn_off: cover_open_09_out17
       - switch.turn_off: cover_close_09_out18
 
-  - platform: venetian_blinds
-    name: 'KZ WEST S D'
+  - platform: time_based
+    name: 'KZ WEST SÜD'
     id: cover_10
+    device_class: shutter
     open_action:
       - switch.turn_on: cover_open_10_out19
     open_duration: 60s
     close_action:
-      - if:
-          condition:
-            binary_sensor.is_off: wind_alarm
-          then:
-             - switch.turn_on: cover_close_10_out20
+      - switch.turn_on: cover_close_10_out20
     close_duration: 60s
-    tilt_duration: 2000ms
     stop_action:
       - switch.turn_off: cover_open_10_out19
       - switch.turn_off: cover_close_10_out20
 
-  - platform: venetian_blinds
+  - platform: time_based
     name: 'KZ WEST WEST'
     id: cover_11
+    device_class: shutter
     open_action:
       - switch.turn_on: cover_open_11_out21
     open_duration: 60s
     close_action:
-      - if:
-          condition:
-            binary_sensor.is_off: wind_alarm
-          then:
-             - switch.turn_on: cover_close_11_out22
+      - switch.turn_on: cover_close_11_out22
     close_duration: 60s
-    tilt_duration: 2000ms
     stop_action:
       - switch.turn_off: cover_open_11_out21
       - switch.turn_off: cover_close_11_out22
 
-  - platform: venetian_blinds
+  - platform: time_based
     name: 'SR'
     id: cover_12
+    device_class: shutter
     open_action:
       - switch.turn_on: cover_open_12_out23
     open_duration: 60s
     close_action:
-      - if:
-          condition:
-            binary_sensor.is_off: wind_alarm
-          then:
-            - switch.turn_on: cover_close_12_out24
+      - switch.turn_on: cover_close_12_out24
     close_duration: 60s
-    tilt_duration: 2000ms
     stop_action:
       - switch.turn_off: cover_open_12_out23
       - switch.turn_off: cover_close_12_out24
 
-  - platform: venetian_blinds
+  - platform: time_based
     name: 'SZ'
     id: cover_13
+    device_class: shutter
     open_action:
       - switch.turn_on: cover_open_13_out25
     open_duration: 60s
     close_action:
-      - if:
-          condition:
-            binary_sensor.is_off: wind_alarm
-          then:
-            - switch.turn_on: cover_close_13_out26
+      - switch.turn_on: cover_close_13_out26
     close_duration: 60s
-    tilt_duration: 2000ms
     stop_action:
       - switch.turn_off: cover_open_13_out25
       - switch.turn_off: cover_close_13_out26
 
-  # =========================
-  # VENETIAN BLIND 14
-  # =========================
-
-  - platform: venetian_blinds
+  - platform: time_based
     name: 'ReserveRaff'
     id: cover_14
+    device_class: shutter
     open_action:
       - switch.turn_on: cover_open_14_out27
     open_duration: 60s
     close_action:
-      - if:
-          condition:
-            binary_sensor.is_off: wind_alarm
-          then:
-            - switch.turn_on: cover_close_14_out28
+      - switch.turn_on: cover_close_14_out28
     close_duration: 60s
-    tilt_duration: 2000ms
     stop_action:
       - switch.turn_off: cover_open_14_out27
       - switch.turn_off: cover_close_14_out28
 
-
-
-
-
-
-
 binary_sensor:
-
   - platform: gpio
-    name: '01_Küche'
+    name: 'IN 01 - Küche'
     id: in_01
-
     pin:
       pcf8574: pcf_inputs_1to14
       number: 0
       mode:
         input: true
       inverted: true
+    filters:
+      - delayed_on_off: 20ms
 
-    on_multi_click:
-
-      - timing:
-          - ON for at least 2s
-          - ON for at most 5s
-          - OFF for at least 0.1s
-        then:
-          - lambda: |-
-              button_01.all_press();
-
-      - timing:
-          - ON for at least 1s
-          - ON for at most 1.99s
-          - OFF for at least 0.1s
-        then:
-          - lambda: |-
-              button_01.stop_press();
-
-      - timing:
-          - ON for at most 0.99s
-          - OFF for at least 0.1s
-        then:
-          - lambda: |-
-              button_01.short_press();
-
-  # --- Cover 02 ---
   - platform: gpio
-    name: '03_EZ_S D_Auf'
+    name: 'IN 02 - EZ SÜD'
+    id: in_02
+    pin:
+      pcf8574: pcf_inputs_1to14
+      number: 1
+      mode:
+        input: true
+      inverted: true
+    filters:
+      - delayed_on_off: 20ms
+
+  - platform: gpio
+    name: 'IN 03 - EZ HEBE SÜD'
     id: in_03
     pin:
       pcf8574: pcf_inputs_1to14
@@ -429,77 +328,205 @@ binary_sensor:
       mode:
         input: true
       inverted: true
-    on_multi_click:
-
-      - timing:
-          - ON for at least 2s
-          - ON for at most 5s
-          - OFF for at least 0.1s
-        then:
-          - lambda: |-
-              button_02.all_press();
-
-      - timing:
-          - ON for at least 1s
-          - ON for at most 1.99s
-          - OFF for at least 0.1s
-        then:
-          - lambda: |-
-              button_02.stop_press();
-
-      - timing:
-          - ON for at most 0.99s
-          - OFF for at least 0.1s
-        then:
-          - lambda: |-
-              button_02.short_press();
-
+    filters:
+      - delayed_on_off: 20ms
 
   - platform: gpio
-    name: "29_Wind Alarm"
-    id: wind_alarm
+    name: 'IN 04 - EZ HEBE NORD'
+    id: in_04
     pin:
-      pcf8574: pcf_inputs_28to35_menu
-      number: 0
+      pcf8574: pcf_inputs_1to14
+      number: 3
       mode:
         input: true
-      inverted: true   # NC contact -> OFF = alarm
-
+      inverted: true
     filters:
-      - delayed_on: 2s   # ignore short glitches
+      - delayed_on_off: 20ms
 
-    on_press:
-      then:
-        - logger.log: "WIND ALARM - Opening all covers"
-        - cover.open: cover_01
-        - cover.open: cover_02
-        - cover.open: cover_03
-        - cover.open: cover_04
-        - cover.open: cover_05
-        - cover.open: cover_06
-        - cover.open: cover_07
-        - cover.open: cover_08
-        - cover.open: cover_09
-        - cover.open: cover_10
-        - cover.open: cover_11
-        - cover.open: cover_12
-        - cover.open: cover_13
-        - cover.open: cover_14
+  - platform: gpio
+    name: 'IN 05 - WZ'
+    id: in_05
+    pin:
+      pcf8574: pcf_inputs_1to14
+      number: 4
+      mode:
+        input: true
+      inverted: true
+    filters:
+      - delayed_on_off: 20ms
 
+  - platform: gpio
+    name: 'IN 06 - Gäste West'
+    id: in_06
+    pin:
+      pcf8574: pcf_inputs_1to14
+      number: 5
+      mode:
+        input: true
+      inverted: true
+    filters:
+      - delayed_on_off: 20ms
 
+  - platform: gpio
+    name: 'IN 07 - Gäste Nord'
+    id: in_07
+    pin:
+      pcf8574: pcf_inputs_1to14
+      number: 6
+      mode:
+        input: true
+      inverted: true
+    filters:
+      - delayed_on_off: 20ms
 
-######################
-### MODBUS SECTION ###
-######################
-# UNCOMMENT BELOW TO USE MODBUS
-# uart:
-#   id: uart_pin14_15
-#   rx_pin: GPIO14
-#   tx_pin: GPIO15
-#   baud_rate: 9600
-#   stop_bits: 1
+  - platform: gpio
+    name: 'IN 08 - KZ OST OST'
+    id: in_08
+    pin:
+      pcf8574: pcf_inputs_1to14
+      number: 8
+      mode:
+        input: true
+      inverted: true
+    filters:
+      - delayed_on_off: 20ms
 
-# modbus:
-#   send_wait_time: 200ms
-#   uart_id: uart_pin14_15
-#   id: boneio_modbus
+  - platform: gpio
+    name: 'IN 09 - KZ OST SÜD'
+    id: in_09
+    pin:
+      pcf8574: pcf_inputs_1to14
+      number: 9
+      mode:
+        input: true
+      inverted: true
+    filters:
+      - delayed_on_off: 20ms
+
+  - platform: gpio
+    name: 'IN 10 - KZ WEST SÜD'
+    id: in_10
+    pin:
+      pcf8574: pcf_inputs_1to14
+      number: 10
+      mode:
+        input: true
+      inverted: true
+    filters:
+      - delayed_on_off: 20ms
+
+  - platform: gpio
+    name: 'IN 11 - KZ WEST WEST'
+    id: in_11
+    pin:
+      pcf8574: pcf_inputs_1to14
+      number: 11
+      mode:
+        input: true
+      inverted: true
+    filters:
+      - delayed_on_off: 20ms
+
+  - platform: gpio
+    name: 'IN 12 - SR'
+    id: in_12
+    pin:
+      pcf8574: pcf_inputs_1to14
+      number: 12
+      mode:
+        input: true
+      inverted: true
+    filters:
+      - delayed_on_off: 20ms
+
+  - platform: gpio
+    name: 'IN 13 - SZ'
+    id: in_13
+    pin:
+      pcf8574: pcf_inputs_1to14
+      number: 13
+      mode:
+        input: true
+      inverted: true
+    filters:
+      - delayed_on_off: 20ms
+
+  - platform: gpio
+    name: 'IN 14 - ReserveRaff'
+    id: in_14
+    pin:
+      pcf8574: pcf_inputs_1to14
+      number: 14
+      mode:
+        input: true
+      inverted: true
+    filters:
+      - delayed_on_off: 20ms
+
+cover_button:
+  - id: button_01
+    cover_id: cover_01
+    input_id: in_01
+    tilt_enabled: true
+    tilt_step: 10%
+
+  - id: button_02
+    cover_id: cover_02
+    input_id: in_02
+    tilt_enabled: true
+    tilt_step: 10%
+
+  - id: button_03
+    cover_id: cover_03
+    input_id: in_03
+    tilt_enabled: true
+    tilt_step: 10%
+
+  - id: button_04
+    cover_id: cover_04
+    input_id: in_04
+    tilt_enabled: true
+    tilt_step: 10%
+
+  - id: button_05
+    cover_id: cover_05
+    input_id: in_05
+    tilt_enabled: true
+    tilt_step: 10%
+
+  - id: button_06
+    cover_id: cover_06
+    input_id: in_06
+
+  - id: button_07
+    cover_id: cover_07
+    input_id: in_07
+
+  - id: button_08
+    cover_id: cover_08
+    input_id: in_08
+
+  - id: button_09
+    cover_id: cover_09
+    input_id: in_09
+
+  - id: button_10
+    cover_id: cover_10
+    input_id: in_10
+
+  - id: button_11
+    cover_id: cover_11
+    input_id: in_11
+
+  - id: button_12
+    cover_id: cover_12
+    input_id: in_12
+
+  - id: button_13
+    cover_id: cover_13
+    input_id: in_13
+
+  - id: button_14
+    cover_id: cover_14
+    input_id: in_14
+
