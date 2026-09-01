@@ -1,1 +1,3 @@
-"""ESPHome time-based Venetian blind cover platform."""
+import esphome.codegen as cg
+
+venetian_blinds_ns = cg.esphome_ns.namespace("venetian_blinds")

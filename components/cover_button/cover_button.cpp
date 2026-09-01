@@ -34,9 +34,10 @@ void CoverButtonController::dump_config() {
   ESP_LOGCONFIG(TAG, "Cover button controller:");
   ESP_LOGCONFIG(TAG, "  Tilt enabled: %s", YESNO(this->tilt_enabled_));
   ESP_LOGCONFIG(TAG, "  Tilt step: %.0f%%", this->tilt_step_ * 100.0f);
-  ESP_LOGCONFIG(TAG, "  Press limits: %ums / %ums / %ums",
-                this->short_press_max_, this->stop_press_max_,
-                this->all_press_max_);
+  ESP_LOGCONFIG(TAG, "  Press limits: %lums / %lums / %lums",
+                static_cast<unsigned long>(this->short_press_max_),
+                static_cast<unsigned long>(this->stop_press_max_),
+                static_cast<unsigned long>(this->all_press_max_));
 }
 
 void CoverButtonController::handle_input_(bool state) {
