@@ -53,7 +53,7 @@ class CoverButtonController : public Component {
 
   cover::Cover *cover_{nullptr};
   binary_sensor::BinarySensor *input_{nullptr};
-  Direction last_direction_{DOWN};
+  Direction last_direction_{UP};
   Direction press_direction_{UP};
   uint32_t stop_release_max_{2000};
   uint32_t group_release_min_{5000};
