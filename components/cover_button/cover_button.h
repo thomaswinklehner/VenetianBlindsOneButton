@@ -1,5 +1,8 @@
 #pragma once
 
+#include <cstddef>
+#include <cstdint>
+
 #include "esphome/components/binary_sensor/binary_sensor.h"
 #include "esphome/components/cover/cover.h"
 #include "esphome/core/component.h"
