@@ -10,7 +10,7 @@ esphome:
   name_add_mac_suffix: true
   project:
     name: thomaswinklehner.venetian-blinds-one-button
-    version: '1.0.0'
+    version: '1.1.0'
   on_boot:
     - priority: 1001
       then:
@@ -31,6 +31,7 @@ external_components:
     components:
       - cover_button
       - venetian_blinds
+      - wind_alarm
 
 ethernet:
   id: eth
@@ -463,36 +464,45 @@ binary_sensor:
     filters:
       - delayed_on_off: 20ms
 
+  - platform: gpio
+    name: 'IN 29 - Wind Alarm'
+    id: in_29_wind_alarm
+    pin:
+      pcf8574: pcf_inputs_28to35_menu
+      number: 0
+      mode:
+        input: true
+      inverted: false
+    filters:
+      - delayed_on_off: 20ms
+
+wind_alarm:
+  id: wind_alarm_controller
+  input_id: in_29_wind_alarm
+  active_low: true
+
 cover_button:
+  # Press while moving: stop immediately and ignore release.
+  # From idle: <2s stops, 2-5s continues, >=5s moves all.
   - id: button_01
     cover_id: cover_01
     input_id: in_01
-    tilt_enabled: true
-    tilt_step: 10%
 
   - id: button_02
     cover_id: cover_02
     input_id: in_02
-    tilt_enabled: true
-    tilt_step: 10%
 
   - id: button_03
     cover_id: cover_03
     input_id: in_03
-    tilt_enabled: true
-    tilt_step: 10%
 
   - id: button_04
     cover_id: cover_04
     input_id: in_04
-    tilt_enabled: true
-    tilt_step: 10%
 
   - id: button_05
     cover_id: cover_05
     input_id: in_05
-    tilt_enabled: true
-    tilt_step: 10%
 
   - id: button_06
     cover_id: cover_06
@@ -529,4 +539,3 @@ cover_button:
   - id: button_14
     cover_id: cover_14
     input_id: in_14
-
